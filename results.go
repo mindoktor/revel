@@ -13,6 +13,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"reflect"
 	"strconv"
 	"strings"
@@ -429,6 +430,16 @@ type RedirectToURLResult struct {
 }
 
 func (r *RedirectToURLResult) Apply(req *Request, resp *Response) {
+	// HACK: see https://github.com/revel/revel/issues/1418
+	if req.URL.Query().Get("version") == "legacy" {
+		u, err := url.Parse(r.url)
+		if err == nil {
+			q := u.Query()
+			q.Set("version", "legacy")
+			u.RawQuery = q.Encode()
+			r.url = u.String()
+		}
+	}
 	resp.Out.internalHeader.Set("Location", r.url)
 	resp.WriteHeader(http.StatusFound, "")
 }
